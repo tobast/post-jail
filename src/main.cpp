@@ -63,7 +63,8 @@ void onFailure(time_t lockCreation, time_t lockDeleteTime) {
 }
 
 void onSuccess(const Config& cfg) {
-	execl(cfg.onSuccessProgram, cfg.onSuccessProgram, NULL);
+	const char* prgm = cfg.onSuccessProgram.c_str();
+	execl(prgm, prgm, NULL);
 	fprintf(stderr, "execl failed.\n");
 	exit(1); // If this is executed, execl failed.
 }
@@ -133,11 +134,13 @@ int main(int /*argc*/, char** /*argv*/) {
 	genChallenge(cfg.challengeLength, challenge);
 	
 	char* postBuffer = (char*)malloc(
-			strlen(cfg.postHeader) + strlen(cfg.postFooter) +
+			strlen(cfg.postHeader.c_str()) + strlen(cfg.postFooter.c_str()) +
 			cfg.challengeLength + 10);
-	genPostData(cfg.postHeader, challenge, cfg.postFooter, postBuffer);
+	genPostData(cfg.postHeader.c_str(), challenge, cfg.postFooter.c_str(),
+			postBuffer);
 	
-	sendChallenge(cfg.httpHeader, postBuffer, cfg.challengeUrl);
+	sendChallenge(cfg.httpHeader.c_str(), postBuffer,
+			cfg.challengeUrl.c_str());
 	free(postBuffer);
 
 	if(!createCooldownLock()) {

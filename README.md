@@ -34,7 +34,7 @@ post_header = { "challenge":"
 post_footer = " }
 on_success = /bin/bash
 challenge_length = 8
-authCooldownTime = 300
+cooldown_time = 300
 # 5 minutes cooldown time
 ```
 

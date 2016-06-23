@@ -36,12 +36,16 @@ bool createCooldownLock() {
 std::string strip(const std::string& str) {
 	int beg=-1,end=-1;
 	for(size_t pos=0; pos < str.size(); pos++) {
-		if(str[pos] != ' ' && str[pos] != '\t' && str[pos] != '\n')
+		if(str[pos] != ' ' && str[pos] != '\t' && str[pos] != '\n') {
 			beg = pos;
+			break;
+		}
 	}
 	for(int pos=(int)str.size() - 1; pos >= 0; pos--) {
-		if(str[pos] != ' ' && str[pos] != '\t' && str[pos] != '\n')
+		if(str[pos] != ' ' && str[pos] != '\t' && str[pos] != '\n') {
 			end = pos+1;
+			break;
+		}
 	}
 	if(end < 0 || beg < 0) // String is [ \t\n]*
 		return "";
@@ -88,15 +92,15 @@ Config readConfig(const char* path) {
 
 			// Bwearkh.
 			if(tag == "url")
-				cfg.challengeUrl = val.c_str();
+				cfg.challengeUrl = val;
 			else if(tag == "http_header")
-				cfg.httpHeader = val.c_str();
+				cfg.httpHeader = val;
 			else if(tag == "post_header")
-				cfg.postHeader = val.c_str();
+				cfg.postHeader = val;
 			else if(tag == "post_footer")
-				cfg.postFooter = val.c_str();
+				cfg.postFooter = val;
 			else if(tag == "on_success")
-				cfg.onSuccessProgram = val.c_str();
+				cfg.onSuccessProgram = val;
 			else if(tag == "challenge_length")
 				cfg.challengeLength = toNumber(val);
 			else if(tag == "cooldown_time")
@@ -112,15 +116,16 @@ Config readConfig(const char* path) {
 		fprintf(stderr, "Can't open configuration file. Aborting.\n");
 		exit(1);
 	}
+
 	return cfg;
 }
 
 Config defaultConfig() { // FIXME DEBUG - this function MUST be removed later
 	Config out;
-	out.challengeUrl = "https://tobast.fr/hooks/postdump";
-	out.httpHeader = "Content-Type: application/json";
-	out.postHeader = "{ \"greet\":\"Oh, hello!\", \"challenge\":\"";
-	out.postFooter = "\", \"farewell\":\"See ya!\" }";
+	out.challengeUrl = "";
+	out.httpHeader = "";
+	out.postHeader = "";
+	out.postFooter = "";
 	out.onSuccessProgram = "/bin/bash";
 	out.challengeLength = 8;
 	out.authCooldownTime = 5*60;

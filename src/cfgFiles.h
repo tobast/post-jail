@@ -1,6 +1,7 @@
 #pragma once
 #include "constants.h"
 #include <ctime>
+#include <string>
 
 /// Checks whether a file exists
 bool fileExists(const char* path);
@@ -15,12 +16,12 @@ bool createCooldownLock();
 bool deleteCooldownLock(time_t ifBefore);
 
 struct Config {
-	const char* challengeUrl;
-	const char* postHeader;
-	const char* postFooter;
-	const char* httpHeader;
+	std::string challengeUrl;
+	std::string postHeader;
+	std::string postFooter;
+	std::string httpHeader;
 
-	const char* onSuccessProgram;
+	std::string onSuccessProgram;
 
 	unsigned challengeLength;
 
