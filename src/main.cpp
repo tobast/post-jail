@@ -41,15 +41,36 @@ void genPostData(const char* header, const char* randBuff,
 	strcpy(buff + cpypos, footer); // Copies a \0 character.
 }
 
-void onFailure() {
+void lockDeleter(time_t creationTime, time_t deleteAfter) {
+	pid_t cPid = fork();
+	if(cPid < 0) { // Error
+		return; // TODO better error handling?
+	}
+	else if(cPid == 0) { // Child
+		int timeToSleep = difftime(deleteAfter, time(NULL));
+		while(timeToSleep > 0) {
+			sleep(timeToSleep);
+			timeToSleep = difftime(deleteAfter, time(NULL));
+		}
+		deleteCooldownLock(creationTime+15);
+	}
+	// Else parent
+}
+
+void onFailure(time_t lockCreation, time_t lockDeleteTime) {
+	fprintf(stderr, "Authentication failed.\n");
+	lockDeleter(lockCreation, lockDeleteTime);
 }
 
 void onSuccess(const Config& cfg) {
-	puts("Bravo !");
+	execl(cfg.onSuccessProgram, cfg.onSuccessProgram, NULL);
+	fprintf(stderr, "execl failed.\n");
+	exit(1); // If this is executed, execl failed.
 }
 
 void readInput(const Config& cfg, const char* challenge) {
 	time_t startInputTime = time(NULL);
+	time_t lockDeleteTime = startInputTime + cfg.authCooldownTime;
 	int tryId;
 
 	for(tryId=0; tryId < 3; tryId++) {
@@ -68,41 +89,42 @@ void readInput(const Config& cfg, const char* challenge) {
 		userPass[typePos] = '\0';
 
 		if(difftime(time(NULL), startInputTime) > TIMEOUT_DELAY) {
+			onFailure(startInputTime, lockDeleteTime);
 			printf("Timed out.\n");
 			exit(2);
 		}
 
 		if(strcmp(userPass, challenge) == 0) {
+			deleteCooldownLock(startInputTime+15); // 15s are allowed
 			onSuccess(cfg);
 			exit(0);
 		}
-		else {
-			printf("Wrong challenge.\n");
-		}
+
+		printf("Wrong challenge.\n");
 	}
 	if(tryId == 3) { // Failed three times
-		onFailure();
+		onFailure(startInputTime, lockDeleteTime);
 		exit(2);
 	}
 }
 
 int main(int /*argc*/, char** /*argv*/) {
 	if(hasCooldownLock()) {
-		printf("The last failed login attempt is too recent."
+		printf("The last failed login attempt is too recent. "
 				"Please wait.\n");
-		return 1;
+		exit(2);
 	}
 
 	// TODO maybe more configured security checks here?
 	
 	Config cfg;
-	cfg = defaultConfig(); //FIXME
+	cfg = readConfig(CONFIG_PATH);
 
 	if(cfg.challengeLength >= MAX_CHALLENGE_LEN) {
 		fprintf(stderr, "The required challenge is too long (%u bytes), it "
 				"should be at most %u chars long.\n",
 				cfg.challengeLength, MAX_CHALLENGE_LEN);
-		return 1;
+		exit(1);
 	}
 	
 	printf("Sending a challenge... ");
@@ -114,10 +136,15 @@ int main(int /*argc*/, char** /*argv*/) {
 			strlen(cfg.postHeader) + strlen(cfg.postFooter) +
 			cfg.challengeLength + 10);
 	genPostData(cfg.postHeader, challenge, cfg.postFooter, postBuffer);
-
+	
 	sendChallenge(cfg.httpHeader, postBuffer, cfg.challengeUrl);
-
 	free(postBuffer);
+
+	if(!createCooldownLock()) {
+		fprintf(stderr, "Could not create cooldown lock.\n");
+		printf("Unexpected error, aborting.\n");
+		exit(1);
+	}
 	
 	printf("Challenge sent. Please type it in:\n");
 	

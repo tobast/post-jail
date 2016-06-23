@@ -2,7 +2,8 @@
 
 #include "constants.h"
 
-const char* LOCK_FILE_NAME="~/.postjail.lock";
+const char* LOCK_FILE_NAME=".postjail.lock";
+const char* CONFIG_PATH=".postjailrc";
 const char* USED_CHARS = "abcdefghijklmnopqrstuvwxyz"
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	"0123456789+=";
